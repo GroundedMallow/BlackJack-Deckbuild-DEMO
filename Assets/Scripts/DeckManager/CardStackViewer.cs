@@ -6,21 +6,31 @@ using UnityEngine;
 public class CardStackViewer : MonoBehaviour
 {
     CardStack _deck;
-    List<int> fetchedCards;
+    Dictionary<int, GameObject> fetchedCards; //int kvl
     int lastCount;
 
     public Vector3 start;
     public GameObject cardPrefab;
     public float cardOffset;
+    public bool faceUp = false;
 
     void Start()
     {
-        fetchedCards = new List<int>();
+        fetchedCards = new Dictionary<int, GameObject>();
         _deck = GetComponent<CardStack>();
         ShowCards();
         lastCount = _deck.CardCount;
-    }
 
+        _deck.CardRemoved += _deck_CardRemoved;
+    }
+    void _deck_CardRemoved(object sender, CardRemovedEventArgs e)
+    {
+        if (fetchedCards.ContainsKey(e.CardIndex))
+        {
+            Destroy(fetchedCards[e.CardIndex]); //removes deck from card, adds to hand
+            fetchedCards.Remove(e.CardIndex);
+        }
+    }
     void Update()
     {
         if (lastCount != _deck.CardCount)
@@ -47,21 +57,21 @@ public class CardStackViewer : MonoBehaviour
 
     void AddCards(Vector3 position, int cardIndex, int positionIndex)
     {
-        if (fetchedCards.Contains(cardIndex))
+        if (fetchedCards.ContainsKey(cardIndex))
         {
             return;
         }
-        
+
         GameObject cardCopy = (GameObject)Instantiate(cardPrefab);
         cardCopy.transform.position = position;
 
         CardModel cardModel = cardCopy.GetComponent<CardModel>();
         cardModel.cardIndex = cardIndex;
-        cardModel.ToggleFace(true);
+        cardModel.ToggleFace(faceUp);
 
         SpriteRenderer spriteRenderer = cardCopy.GetComponent<SpriteRenderer>();
         spriteRenderer.sortingOrder = positionIndex;
 
-        fetchedCards.Add(cardIndex);
+        fetchedCards.Add(cardIndex, cardCopy);
     }
 }
